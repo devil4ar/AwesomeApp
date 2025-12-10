@@ -5,7 +5,7 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, min_ios_version_supported
+platform :ios, '13.0'
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -30,5 +30,20 @@ target 'AwesomeApp' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    # Fix for Hermes script phase
+    installer.pods_project.targets.each do |target|
+      if target.name == 'hermes-engine'
+        target.shell_script_build_phases.each do |phase|
+          if phase.name&.include?('Hermes')
+            phase.shell_script = <<-SCRIPT.strip_heredoc
+              set -e
+              echo "Skipping Hermes replace script"
+              exit 0
+            SCRIPT
+          end
+        end
+      end
+    end
   end
 end
